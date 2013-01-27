@@ -1,0 +1,19 @@
+Keaton Boyle - 103-882-791
+Anthony Ortega - 503-953-545
+
+Relevant changes appear in:
+   read-command.c, 
+   command-internals.h, 
+   command.h
+
+Makefile was also modified to remove the -Werror tag.
+
+We currently don't know of any specific limitations, but we certainly haven't 
+exhausted testing all the corner cases and there's bound to be something 
+wrong in there.
+
+There was bit of confusion regarding the treatment of semicolon-separated 
+commands as separate "complete commands" in the command stream or as 
+SEQUENCE_COMMAND trees.  The decision we opted for was complete commands to 
+more easily perform top-level parallelism in later parts of the project.
+
