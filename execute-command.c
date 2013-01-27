@@ -136,12 +136,18 @@ evaluateTree (command_t com)
       {
         if ((out = open(com->output, O_WRONLY | O_CREAT)) == -1)
           error(1, 0, "failed to open file");
+		
+		dup2(out, STDOUT_FILENO);
+		close(out);
       }
 
       if (com->input)   // subshell command contains a '<' redirect
       {
         if ((in = open(com->input, O_RDONLY)) == -1)
           error(1, 0, "failed to open file");
+		  
+		dup2(in, STDIN_FILENO);
+		close(in);
       }
 
       return evaluateTree(com->u.subshell_command);
