@@ -64,25 +64,31 @@ evaluateTree (command_t com)
     case PIPE_COMMAND:
     {
       if(pipe(pipefd) == -1)
-        error(1,0,"IO Error");
+        error(1,0,"Pipe Error");
 
       pid = fork();
       if(pid == -1)
         error(1,0,"Error during fork()");
       else if(pid == 0) /*In Child*/
       {
-        dup2(pipefd[1],1);
-        close(pipefd[0]);
+        if(dup2(pipefd[1],1) == -1)
+		  error(1,0,"Error using dup2()");
+        if(close(pipefd[0]) == -1)
+		  error(1,0,"Error closing file descriptor");
         left = evaluateTree(com->u.command[0]);
-        close(pipefd[1]);
+        if(close(pipefd[1]) == -1)
+		  error(1,0,"Error closing file descriptor");
         _exit(left);
       }
       else /* In Parent */
       {
-        dup2(pipefd[0],0);
-        close(pipefd[1]);
+        if(dup2(pipefd[0],0) == -1)
+		  error(1,0,"Error using dup2()");
+        if(close(pipefd[1] == -1)
+		  error(1,0,"Error closing file descriptor");
         right = evaluateTree(com->u.command[1]);
-        close(pipefd[0]);
+        if(close(pipefd[0]) == -1)
+		  error(1,0,"Error closing file descriptor");
         return right;
       }	
     }
@@ -107,6 +113,7 @@ evaluateTree (command_t com)
             error(1, 0, "failed to open file");
 
           dup2(out, STDOUT_FILENO);
+		  close(out);
         }
 
         if (com->input)  // command contains a '<' redirect
@@ -115,6 +122,7 @@ evaluateTree (command_t com)
             error(1, 0, "failed to open file");
 
           dup2(in, STDIN_FILENO);
+		  close(in);
         }
 
         execvp(com->u.word[0], com->u.word);
@@ -136,10 +144,10 @@ evaluateTree (command_t com)
           error(1, 0, "failed to open file");
       }
 
-      return evaluateTree(com->u.subshell_command, out, in);
+      return evaluateTree(com->u.subshell_command);
     }
     default:
       error(1, 0, "unrecognized command type");
   }
-  return 1;
+  return 1; // To avoid warning flag
 }
