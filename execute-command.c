@@ -43,55 +43,54 @@ evaluateTree (command_t com)
   {
     case AND_COMMAND:
     {
-	  left = evaluateTree(com->u.command[0]);
-	  if(left == 0)
-	    return evaluateTree(com->u.command[1]);
+      left = evaluateTree(com->u.command[0]);
+      if(left == 0)
+        return evaluateTree(com->u.command[1]);
       return left;	  
-	}
+    }
 
     case SEQUENCE_COMMAND: // ------------------------------- SEQUENCE_COMMAND
     {
       evaluateTree(com->u.command[0]);
       return evaluateTree(com->u.command[1]);
-      break;
     }
     case OR_COMMAND:
     {
-	  left = evaluateTree(com->u.command[0]);
-	  if(left != 0)
-	    return evaluateTree(com->u.command[1]);
-	  return left;	
-	}
+      left = evaluateTree(com->u.command[0]);
+      if(left != 0)
+        return evaluateTree(com->u.command[1]);
+      return left;	
+    }
     case PIPE_COMMAND:
     {
-	  if(pipe(pipefd) == -1)
-	    error(1,0,"IO Error");
-	
-	  pid = fork();
-	  if(pid == -1)
-	    error(1,0,"Error during fork()");
-	  else if(pid == 0) /*In Child*/
-	  {
-	    dup2(pipefd[1],1);
-		close(pipefd[0]);
-		left = evaluateTree(com->u.command[0]);
-		close(pipefd[1]);
-		_exit(left);
-	  }
-	  else /* In Parent */
-	  {
-	    dup2(pipefd[0],0);
-		close(pipefd[1]);
-		right = evaluateTree(com->u.command[1]);
-		close(pipefd[0]);
-		return right;
-	  }	
-	}
-    case SIMPLE_COMMAND: // ----------------------------------- SIMPLE_COMMAND
-	{
+      if(pipe(pipefd) == -1)
+        error(1,0,"IO Error");
+
       pid = fork();
       if(pid == -1)
-	    error(1,0,"Error During fork()");
+        error(1,0,"Error during fork()");
+      else if(pid == 0) /*In Child*/
+      {
+        dup2(pipefd[1],1);
+        close(pipefd[0]);
+        left = evaluateTree(com->u.command[0]);
+        close(pipefd[1]);
+        _exit(left);
+      }
+      else /* In Parent */
+      {
+        dup2(pipefd[0],0);
+        close(pipefd[1]);
+        right = evaluateTree(com->u.command[1]);
+        close(pipefd[0]);
+        return right;
+      }	
+    }
+    case SIMPLE_COMMAND: // ----------------------------------- SIMPLE_COMMAND
+    {
+      pid = fork();
+      if(pid == -1)
+        error(1,0,"Error During fork()");
       // PARENT
       if (pid != 0)
       {
@@ -122,7 +121,6 @@ evaluateTree (command_t com)
 
         error(1, 0, "execvp returned");
       }
-      break;
     }
     case SUBSHELL_COMMAND: // ------------------------------ SUBSHELL_COMMAND
     {
@@ -139,10 +137,9 @@ evaluateTree (command_t com)
       }
 
       return evaluateTree(com->u.subshell_command, out, in);
-      break;
     }
     default:
       error(1, 0, "unrecognized command type");
   }
-
+  return 1;
 }
