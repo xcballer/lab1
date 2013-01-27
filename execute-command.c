@@ -84,7 +84,7 @@ evaluateTree (command_t com)
       {
         if(dup2(pipefd[0],0) == -1)
 		  error(1,0,"Error using dup2()");
-        if(close(pipefd[1] == -1)
+        if(close(pipefd[1] == -1))
 		  error(1,0,"Error closing file descriptor");
         right = evaluateTree(com->u.command[1]);
         if(close(pipefd[0]) == -1)
