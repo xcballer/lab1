@@ -12,10 +12,7 @@
 
 
 int
-evaluateTree (command_t com, int writeto, int readfrom);
-
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
+evaluateTree (command_t com);
 
 int
 command_status (command_t c)
@@ -26,20 +23,18 @@ command_status (command_t c)
 void
 execute_command (command_t c, bool time_travel)
 {
-  /* FIXME: Replace this with your implementation.  You may need to
-     add auxiliary functions and otherwise modify the source code.
-     You can also use external functions defined in the GNU C Library.  */
 
   if (!time_travel)
-  {
-    c->status = evaluateTree(c, STDOUT_FILENO, STDOUT_FILENO); 
-  }
+    c->status = evaluateTree(c); 
 }
 
 int
-evaluateTree (command_t com, int writeto, int readfrom)
+evaluateTree (command_t com)
 {
-  int pid;
+  int left;
+  int right;
+  int pipefd[2];
+  pid_t pid;
   int out;
   int in;
   int returnStatus;
@@ -47,22 +42,56 @@ evaluateTree (command_t com, int writeto, int readfrom)
   switch (com->type)
   {
     case AND_COMMAND:
+    {
+	  left = evaluateTree(com->u.command[0]);
+	  if(left == 0)
+	    return evaluateTree(com->u.command[1]);
+      return left;	  
+	}
+
+    case SEQUENCE_COMMAND: // ------------------------------- SEQUENCE_COMMAND
+    {
+      evaluateTree(com->u.command[0]);
+      return evaluateTree(com->u.command[1]);
       break;
-
-    case SEQUENCE_COMMAND: // --------------------------------- SEQUENCE_COMMAND
-
-      evaluateTree(com->u.command[0], writeto, readfrom);
-      return evaluateTree(com->u.command[1], writeto, readfrom);
-      break;
-
+    }
     case OR_COMMAND:
-      break;
+    {
+	  left = evaluateTree(com->u.command[0]);
+	  if(left != 0)
+	    return evaluateTree(com->u.command[1]);
+	  return left;	
+	}
     case PIPE_COMMAND:
-      break;
-
-    case SIMPLE_COMMAND: // ------------------------------------- SIMPLE_COMMAND
+    {
+	  if(pipe(pipefd) == -1)
+	    error(1,0,"IO Error");
+	
+	  pid = fork();
+	  if(pid == -1)
+	    error(1,0,"Error during fork()");
+	  else if(pid == 0) /*In Child*/
+	  {
+	    dup2(pipefd[1],1);
+		close(pipefd[0]);
+		left = evaluateTree(com->u.command[0]);
+		close(pipefd[1]);
+		_exit(left);
+	  }
+	  else /* In Parent */
+	  {
+	    dup2(pipefd[0],0);
+		close(pipefd[1]);
+		right = evaluateTree(com->u.command[1]);
+		close(pipefd[0]);
+		return right;
+	  }	
+	}
+    case SIMPLE_COMMAND: // ----------------------------------- SIMPLE_COMMAND
+	{
       pid = fork();
-
+      if(pid == -1)
+	    error(1,0,"Error During fork()");
       // PARENT
       if (pid != 0)
       {
@@ -80,10 +109,6 @@ evaluateTree (command_t com, int writeto, int readfrom)
 
           dup2(out, STDOUT_FILENO);
         }
-        else              // command does not contain a '>' redirect
-        {
-          dup2(writeto, STDOUT_FILENO);
-        }
 
         if (com->input)  // command contains a '<' redirect
         {
@@ -92,27 +117,19 @@ evaluateTree (command_t com, int writeto, int readfrom)
 
           dup2(in, STDIN_FILENO);
         }
-        else              // command does not contain a '<' redirect
-        {
-          dup2(readfrom, STDIN_FILENO);
-        }
 
         execvp(com->u.word[0], com->u.word);
 
         error(1, 0, "execvp returned");
       }
       break;
-
-    case SUBSHELL_COMMAND: // --------------------------------- SUBSHELL_COMMAND
-
+    }
+    case SUBSHELL_COMMAND: // ------------------------------ SUBSHELL_COMMAND
+    {
       if (com->output)  // subshell command contains a '>' redirect
       {
         if ((out = open(com->output, O_WRONLY | O_CREAT)) == -1)
           error(1, 0, "failed to open file");
-      }
-      else              // subshell command does not contain a '>' redirect
-      {
-        out = writeto;
       }
 
       if (com->input)   // subshell command contains a '<' redirect
@@ -120,14 +137,10 @@ evaluateTree (command_t com, int writeto, int readfrom)
         if ((in = open(com->input, O_RDONLY)) == -1)
           error(1, 0, "failed to open file");
       }
-      else              // subshellcommand does not contain a '<' redirect
-      {
-        in = readfrom;
-      }
 
       return evaluateTree(com->u.subshell_command, out, in);
       break;
-
+    }
     default:
       error(1, 0, "unrecognized command type");
   }
