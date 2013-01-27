@@ -23,9 +23,24 @@ command_status (command_t c)
 void
 execute_command (command_t c, bool time_travel)
 {
-
+  /* I had to fork here because I need a way to reset the file descriptor
+    tables for each complete command. Otherwise file descriptors will carry
+	over and I/O will be wrong.*/
   if (!time_travel)
-    c->status = evaluateTree(c); 
+  {
+    pid_t child = fork();
+    if(child == -1)
+      error(1,0,"Error creating child");
+     else if(child == 0)
+     {
+      int status = evaluateTree(c);
+       _exit(status);
+     }
+     else
+     {
+       wait(&(c->status));
+     }
+  } 
 }
 
 int
@@ -46,7 +61,7 @@ evaluateTree (command_t com)
       left = evaluateTree(com->u.command[0]);
       if(left == 0)
         return evaluateTree(com->u.command[1]);
-      return left;	  
+      return 1;	  
     }
 
     case SEQUENCE_COMMAND: // ------------------------------- SEQUENCE_COMMAND
