@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "command.h"
-#include "command-internals.h"
+//#include "command-internals.h"
 
 static char const *program_name;
 static char const *script_name;
@@ -46,7 +46,7 @@ main (int argc, char **argv)
     usage ();
 
 
-  char *spaces = "    ";
+ // char *spaces = "    ";
 
   script_name = argv[optind];
   FILE *script_stream = fopen (script_name, "r");
