@@ -87,25 +87,25 @@ evaluateTree (command_t com)
       else if(pid == 0) /*In Child*/
       {
         if(dup2(pipefd[1],1) == -1)
-		  error(1,0,"Error using dup2()");
+          error(1,0,"Error using dup2()");
         if(close(pipefd[0]) == -1)
-		  error(1,0,"Error closing file descriptor");
+          error(1,0,"Error closing file descriptor");
         left = evaluateTree(com->u.command[0]);
         if(close(pipefd[1]) == -1)
-		  error(1,0,"Error closing file descriptor");
+          error(1,0,"Error closing file descriptor");
         _exit(left);
       }
       else /* In Parent */
       {
         if(dup2(pipefd[0],0) == -1)
-		  error(1,0,"Error using dup2()");
+          error(1,0,"Error using dup2()");
         if(close(pipefd[1]) == -1)
-		  error(1,0,"Error closing file descriptor");
+          error(1,0,"Error closing file descriptor");
         right = evaluateTree(com->u.command[1]);
         if(close(pipefd[0]) == -1)
-		  error(1,0,"Error closing file descriptor");
+          error(1,0,"Error closing file descriptor");
         return right;
-      }	
+      }
     }
     case SIMPLE_COMMAND: // ----------------------------------- SIMPLE_COMMAND
     case SUBSHELL_COMMAND:
@@ -117,7 +117,7 @@ evaluateTree (command_t com)
       if (pid != 0)
       {
         wait(&returnStatus);
-        return returnStatus;
+        return WEXITSTATUS(returnStatus);
       }
 
       // CHILD
@@ -125,11 +125,12 @@ evaluateTree (command_t com)
       {
         if (com->output)  // command contains a '>' redirect
         {
-          if ((out = open(com->output, O_WRONLY | O_CREAT)) == -1)
+          if ((out = open(com->output, O_WRONLY | O_CREAT | O_TRUNC,
+                          S_IRWXU | S_IRWXG)) == -1)
             error(1, 0, "failed to open file");
 
           dup2(out, STDOUT_FILENO);
-		  close(out);
+          close(out);
         }
 
         if (com->input)  // command contains a '<' redirect
@@ -138,7 +139,7 @@ evaluateTree (command_t com)
             error(1, 0, "failed to open file");
 
           dup2(in, STDIN_FILENO);
-		  close(in);
+          close(in);
         }
 
         if(com->type == SIMPLE_COMMAND)
