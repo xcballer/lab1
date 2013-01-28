@@ -124,7 +124,7 @@ make_command_stream (int (*get_next_byte) (void *),
   int closed_par = 0;
   int curr_line = 1;
   int* line_nums = (int*)checked_malloc(sizeof(int));
-  line_nums[0] = -1;
+  line_nums[0] = 1;
   
   while((c = get_next_byte(get_next_byte_argument)) != EOF)
   {
