@@ -178,6 +178,8 @@ make_command_stream (int (*get_next_byte) (void *),
 	}
 	if(c != '\n')
 	{
+      if((isblank((unsigned char)c) != 0) && (effective_prev == '\0'))
+        continue;
 	  // Check that that only paranthesis are preceded by newline(and words of course)
 	  if(effective_prev == '\n')
 	  {
@@ -229,7 +231,7 @@ make_command_stream (int (*get_next_byte) (void *),
 		curr_line++;
 		continue;
 	  }	  
-	  if(prev == '\n')
+	  if(prev == '\n' || effective_prev == '\0')
 	  {
 	    prev = c;
 		if(isblank((unsigned char)c) == 0)
