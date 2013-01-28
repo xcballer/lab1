@@ -108,6 +108,7 @@ evaluateTree (command_t com)
       }	
     }
     case SIMPLE_COMMAND: // ----------------------------------- SIMPLE_COMMAND
+    case SUBSHELL_COMMAND:
     {
       pid = fork();
       if(pid == -1)
@@ -140,12 +141,19 @@ evaluateTree (command_t com)
 		  close(in);
         }
 
-        execvp(com->u.word[0], com->u.word);
-
-        error(1, 0, "execvp returned");
+        if(com->type == SIMPLE_COMMAND)
+        {
+          execvp(com->u.word[0], com->u.word);
+          error(1, 0, "execvp returned");
+        }
+        else
+        {
+          int my_result = evaluateTree(com->u.subshell_command);
+          _exit(my_result);
+        }
       }
     }
-    case SUBSHELL_COMMAND: // ------------------------------ SUBSHELL_COMMAND
+    /*case SUBSHELL_COMMAND: // ------------------------------ SUBSHELL_COMMAND
     {
       if (com->output)  // subshell command contains a '>' redirect
       {
@@ -166,7 +174,7 @@ evaluateTree (command_t com)
       }
 
       return evaluateTree(com->u.subshell_command);
-    }
+    }*/
     default:
       error(1, 0, "unrecognized command type");
   }
