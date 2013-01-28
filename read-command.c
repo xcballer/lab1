@@ -908,8 +908,8 @@ com_text_t *strip_text(com_text_t *pComText)
     else break;
   }
 
-  if (pComText->start > pComText->end)
-    error(1, 0, "%d: empty command detected",pComText->startln);
+/*  if (pComText->start > pComText->end)
+    error(1, 0, "%d: empty command detected",pComText->startln);*/
 
   return pComText;
 }
