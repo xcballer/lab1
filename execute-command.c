@@ -25,7 +25,7 @@ execute_command (command_t c, bool time_travel)
 {
   /* I had to fork here because I need a way to reset the file descriptor
     tables for each complete command. Otherwise file descriptors will carry
-	over and I/O will be wrong.*/
+    over and I/O will be wrong.*/
   if (!time_travel)
   {
     pid_t child = fork();
@@ -154,28 +154,6 @@ evaluateTree (command_t com)
         }
       }
     }
-    /*case SUBSHELL_COMMAND: // ------------------------------ SUBSHELL_COMMAND
-    {
-      if (com->output)  // subshell command contains a '>' redirect
-      {
-        if ((out = open(com->output, O_WRONLY | O_CREAT)) == -1)
-          error(1, 0, "failed to open file");
-		
-		dup2(out, STDOUT_FILENO);
-		close(out);
-      }
-
-      if (com->input)   // subshell command contains a '<' redirect
-      {
-        if ((in = open(com->input, O_RDONLY)) == -1)
-          error(1, 0, "failed to open file");
-		  
-		dup2(in, STDIN_FILENO);
-		close(in);
-      }
-
-      return evaluateTree(com->u.subshell_command);
-    }*/
     default:
       error(1, 0, "unrecognized command type");
   }
