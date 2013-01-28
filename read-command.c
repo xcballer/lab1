@@ -28,8 +28,8 @@ bool is_token(char c)
     case ':': return true;
     case '@': return true;
     case '^': return true;
-    case '_': return true;	
-	case '#': return true;
+    case '_': return true;
+    case '#': return true;
   }
   return false;
 }
@@ -54,10 +54,10 @@ bool is_illegal(char c)
 {
   /* This function makes sure that the shell contains tokens that fall
     within the allowable subset. This doesn't apply to comments*/
-	
+    
   if((isalnum((unsigned char)c) == 0) && (!is_special(c)) && (c != ';')
     && (!is_token(c)) && (isspace((unsigned char)c) == 0))
-	return true;
+    return true;
   return false;
 }
 
@@ -70,11 +70,11 @@ void add_char(char** list, int curr, char c)
   int length = 0;
   if(str == NULL)
   {
-	tmp = (char*)checked_realloc(str,sizeof(char)*2);
-	tmp[0] = c;
-	tmp[1] = '\0';
-	list[curr] = tmp;
-	return;
+    tmp = (char*)checked_realloc(str,sizeof(char)*2);
+    tmp[0] = c;
+    tmp[1] = '\0';
+    list[curr] = tmp;
+    return;
   }
   length = strlen(str);
   tmp = (char*)checked_realloc(str,sizeof(char)*(2+length));
@@ -110,7 +110,7 @@ read_command_stream (command_stream_t s)
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
-		     void *get_next_byte_argument)
+             void *get_next_byte_argument)
 {
   char** commandStrings = (char**)checked_malloc(sizeof(char*));
   commandStrings[0] = NULL;
@@ -129,144 +129,144 @@ make_command_stream (int (*get_next_byte) (void *),
   while((c = get_next_byte(get_next_byte_argument)) != EOF)
   {
     if(is_illegal(c))  // Check for illegal tokens
-	{
-	  error(1,0,"%d: Invalid token '%c'.",curr_line,c);
-	  return 0;
-	}
-	if((c == ';') && (!sub))
-	{
+    {
+      error(1,0,"%d: Invalid token '%c'.",curr_line,c);
+      return 0;
+    }
+    if((c == ';') && (!sub))
+    {
     if(effective_prev =='\n' || effective_prev =='\0')
       error(1,0, "%d: Can't start line with '%c'", curr_line, c);
 
     if(effective_prev == ';')
       error(1,0, "%d: Too many '%c' tokens", curr_line, c);
 
-	  count++;
-	  temp = (char**)checked_realloc(commandStrings,sizeof(char*)*count);
-	  commandStrings = temp;
-	  commandStrings[count-1] = NULL;
+      count++;
+      temp = (char**)checked_realloc(commandStrings,sizeof(char*)*count);
+      commandStrings = temp;
+      commandStrings[count-1] = NULL;
       int* temp_int = (int*)checked_realloc(line_nums,sizeof(int)*count);
       line_nums = temp_int;
-	  prev = c;
-	  effective_prev = c;
-	  continue;
-	}
-	if(c == '#') // Take care of comments be ignoring everything up to newline
-	{
-	  if((is_special(prev)) || (isblank((unsigned char)prev) != 0)  // changed from unsigned char type to char
-	    || (prev == '\n') ||(prev == '\0'))
-	  {
-	    while((c = get_next_byte(get_next_byte_argument)) != EOF)
-		  if( c == '\n')
-		    break;
-		if(c == EOF)
-		  break;
-		if((prev == '\0') && (c == '\n')) // Case if script starts with #
-		{                             //If I don't include this an empty string is made
-		  prev = c;
-		  if(isblank((unsigned char)c) == 0)
-		    effective_prev = c;
-		  curr_line++;
-		  continue;
-	    }
-	  }
-	  else
-	  {
-	    error(1,0,"Line %d: Invalid use of '#' token.",curr_line);
-		return 0;
-	  }
-	}
-	if(c != '\n')
-	{
+      prev = c;
+      effective_prev = c;
+      continue;
+    }
+    if(c == '#') // Take care of comments be ignoring everything up to newline
+    {
+      if((is_special(prev)) || (isblank((unsigned char)prev) != 0)  // changed from unsigned char type to char
+        || (prev == '\n') ||(prev == '\0'))
+      {
+        while((c = get_next_byte(get_next_byte_argument)) != EOF)
+          if( c == '\n')
+            break;
+        if(c == EOF)
+          break;
+        if((prev == '\0') && (c == '\n')) // Case if script starts with #
+        {                             //If I don't include this an empty string is made
+          prev = c;
+          if(isblank((unsigned char)c) == 0)
+            effective_prev = c;
+          curr_line++;
+          continue;
+        }
+      }
+      else
+      {
+        error(1,0,"Line %d: Invalid use of '#' token.",curr_line);
+        return 0;
+      }
+    }
+    if(c != '\n')
+    {
       if((isblank((unsigned char)c) != 0) && (effective_prev == '\0'))
         continue;
-	  // Check that that only paranthesis are preceded by newline(and words of course)
-	  if(effective_prev == '\n')
-	  {
-	    if((c == '|') || (c == '&') || (c == '>') || (c == '<'))
-		{
-		  error(1,0,"%d: Unexpected newline before '%c' token",curr_line,c);
-		  return 0;
-		}
-	  }
-	  if(c == '(')
-	  {
-	    sub = true;
-		open_par++;
-	  }
-	  else if(c == ')')
-	  {
-	    closed_par++;
-		if(open_par == closed_par)
-		{
-		  sub = false;
-		  open_par = 0;
-		  closed_par = 0;
-		}
-	  }
-	  if(((c == '|') && (effective_prev == '&')) ||
-	    ((c == '&') && (effective_prev == '|')))
-	  {
-	    error(1,0,"%d: Invalid AND-OR.",curr_line);
-		return 0;
-	  }
-	  if(commandStrings[count-1] == NULL)
-	  {
-	    line_nums[count-1] = curr_line;
-	  }
-	  add_char(commandStrings,count-1,c);
-	}
-	else
-	{
-	  if((effective_prev == '|') || (effective_prev == '&') || sub)
-	  {
-	    prev = c;
-		if(isblank((unsigned char)c) == 0)
-		  effective_prev = c;
-	    if(commandStrings[count-1] == NULL)
-	    {
-	      line_nums[count-1] = curr_line;
-	    }
-		add_char(commandStrings,count-1,c);		
-		curr_line++;
-		continue;
-	  }	  
-	  if(prev == '\n' || effective_prev == '\0')
-	  {
-	    prev = c;
-		if(isblank((unsigned char)c) == 0)
-		  effective_prev = c;
-		curr_line++;
-		continue;
-	  }
-	  // Gotta also check for < or > cases
-	  
-	  if((effective_prev == '<') || (effective_prev == '>'))
-	  {
-	    error(1,0,"%d: Cannot end line in < or >",curr_line);
-		return 0;
-	  }
-	  if(!sub && (prev != ';'))
-	  {
-	    count++;
-		temp = (char**)checked_realloc(commandStrings,sizeof(char*)*count);
-	    commandStrings = temp;
-	    commandStrings[count-1] = NULL;
-		int* temp_int = (int*)checked_realloc(line_nums,sizeof(int)*count);
-		line_nums = temp_int;
-	  }
-	  curr_line++;
-	}
-	prev = c;
-	if(isblank((unsigned char)c) == 0)
-	  effective_prev = c;
+      // Check that that only paranthesis are preceded by newline(and words of course)
+      if(effective_prev == '\n')
+      {
+        if((c == '|') || (c == '&') || (c == '>') || (c == '<'))
+        {
+          error(1,0,"%d: Unexpected newline before '%c' token",curr_line,c);
+          return 0;
+        }
+      }
+      if(c == '(')
+      {
+        sub = true;
+        open_par++;
+      }
+      else if(c == ')')
+      {
+        closed_par++;
+        if(open_par == closed_par)
+        {
+          sub = false;
+          open_par = 0;
+          closed_par = 0;
+        }
+      }
+      if(((c == '|') && (effective_prev == '&')) ||
+        ((c == '&') && (effective_prev == '|')))
+      {
+        error(1,0,"%d: Invalid AND-OR.",curr_line);
+        return 0;
+      }
+      if(commandStrings[count-1] == NULL)
+      {
+        line_nums[count-1] = curr_line;
+      }
+      add_char(commandStrings,count-1,c);
+    }
+    else
+    {
+      if((effective_prev == '|') || (effective_prev == '&') || sub)
+      {
+        prev = c;
+        if(isblank((unsigned char)c) == 0)
+          effective_prev = c;
+        if(commandStrings[count-1] == NULL)
+        {
+          line_nums[count-1] = curr_line;
+        }
+        add_char(commandStrings,count-1,c);        
+        curr_line++;
+        continue;
+      }      
+      if(prev == '\n' || effective_prev == '\0')
+      {
+        prev = c;
+        if(isblank((unsigned char)c) == 0)
+          effective_prev = c;
+        curr_line++;
+        continue;
+      }
+      // Gotta also check for < or > cases
+      
+      if((effective_prev == '<') || (effective_prev == '>'))
+      {
+        error(1,0,"%d: Cannot end line in < or >",curr_line);
+        return 0;
+      }
+      if(!sub && (prev != ';'))
+      {
+        count++;
+        temp = (char**)checked_realloc(commandStrings,sizeof(char*)*count);
+        commandStrings = temp;
+        commandStrings[count-1] = NULL;
+        int* temp_int = (int*)checked_realloc(line_nums,sizeof(int)*count);
+        line_nums = temp_int;
+      }
+      curr_line++;
+    }
+    prev = c;
+    if(isblank((unsigned char)c) == 0)
+      effective_prev = c;
   }
   if((commandStrings[0] == NULL) && count == 1)
     count = 0;
   if(open_par != closed_par)     // Check to see if paranthesis are all good
   {
     error(1,0,"%d: Missing a paranthesis",curr_line);
-	return 0;
+    return 0;
   }
 
   if(prev == '\n' && (commandStrings[count-1] == NULL))
