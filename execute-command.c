@@ -61,7 +61,7 @@ evaluateTree (command_t com)
       left = evaluateTree(com->u.command[0]);
       if(left == 0)
         return evaluateTree(com->u.command[1]);
-      return 1;	  
+      return left; 
     }
 
     case SEQUENCE_COMMAND: // ------------------------------- SEQUENCE_COMMAND
@@ -74,7 +74,7 @@ evaluateTree (command_t com)
       left = evaluateTree(com->u.command[0]);
       if(left != 0)
         return evaluateTree(com->u.command[1]);
-      return left;	
+      return left;
     }
     case PIPE_COMMAND:
     {
