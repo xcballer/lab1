@@ -42,7 +42,8 @@ echo ..1
 echo ..1
 (true || (true && echo BAD)) && echo GOOD #GOOD
 
-echo left;echo right    #left right
+echo left;echo right    #left 
+                        #right
 
 echo curls | cat | cat | cat | cat      # curls
 
