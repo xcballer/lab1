@@ -36,10 +36,12 @@ execute_command (command_t c, bool time_travel)
       int status = evaluateTree(c);
        _exit(status);
      }
-     else
-     {
-       wait(&(c->status));
-     }
+    else
+    {
+      int temp;
+      wait(&temp);
+      c->status = WEXITSTATUS(temp);
+    }
   } 
 }
 
