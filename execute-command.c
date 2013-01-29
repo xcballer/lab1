@@ -92,9 +92,9 @@ evaluateTree (command_t com)
           error(1,0,"Error using dup2()");
         if(close(pipefd[0]) == -1)
           error(1,0,"Error closing file descriptor");
-        left = evaluateTree(com->u.command[0]);
         if(close(pipefd[1]) == -1)
           error(1,0,"Error closing file descriptor");
+        left = evaluateTree(com->u.command[0]);
         _exit(left);
       }
       else /* In Parent */
@@ -103,9 +103,9 @@ evaluateTree (command_t com)
           error(1,0,"Error using dup2()");
         if(close(pipefd[1]) == -1)
           error(1,0,"Error closing file descriptor");
-        right = evaluateTree(com->u.command[1]);
         if(close(pipefd[0]) == -1)
           error(1,0,"Error closing file descriptor");
+        right = evaluateTree(com->u.command[1]);
         return right;
       }
     }
