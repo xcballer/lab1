@@ -58,7 +58,7 @@ evaluateTree (command_t com)
 
   switch (com->type)
   {
-    case AND_COMMAND:
+    case AND_COMMAND:// ------------------------------------------- AND_COMMAND
     {
       left = evaluateTree(com->u.command[0]);
       if(left == 0)
@@ -78,7 +78,7 @@ evaluateTree (command_t com)
         return evaluateTree(com->u.command[1]);
       return left;
     }
-    case PIPE_COMMAND:
+    case PIPE_COMMAND: // --------------------------------------- PIPE_COMMAND
     {
       if(pipe(pipefd) == -1)
         error(1,0,"Pipe Error");
@@ -128,11 +128,13 @@ evaluateTree (command_t com)
         if (com->output)  // command contains a '>' redirect
         {
           if ((out = open(com->output, O_WRONLY | O_CREAT | O_TRUNC,
-                          S_IRWXU | S_IRWXG)) == -1)
+                          0x0666)) == -1)
             error(1, 0, "failed to open file");
 
-          dup2(out, STDOUT_FILENO);
-          close(out);
+          if(dup2(out, STDOUT_FILENO) == -1)
+            error(1,0,"Error using dup2()");
+          if(close(out) == -1)
+            error(1,0,"Error closing file descriptor");
         }
 
         if (com->input)  // command contains a '<' redirect
@@ -140,8 +142,10 @@ evaluateTree (command_t com)
           if ((in = open(com->input, O_RDONLY)) == -1)
             error(1, 0, "failed to open file");
 
-          dup2(in, STDIN_FILENO);
-          close(in);
+          if(dup2(in, STDIN_FILENO) == -1)
+            error(1,0,"Error using dup2()");
+          if(close(in) == -1)
+            error(1,0,"Error closing file descriptor");
         }
 
         if(com->type == SIMPLE_COMMAND)

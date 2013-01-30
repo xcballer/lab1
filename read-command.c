@@ -297,8 +297,9 @@ stringsToStream(char **commandStrings, int *line_nums, int count)
 
   for (ii = 0; ii < count; ii++) 
   {
+    if (commandStrings[ii] == 0)
+      continue;
     commandArray[ii] = parse_command_string(commandStrings[ii], line_nums[ii]);
-    
   }
 
   command_stream_t commandStream = (command_stream_t) checked_malloc(sizeof(struct command_stream));
@@ -909,9 +910,6 @@ com_text_t *strip_text(com_text_t *pComText)
     }
     else break;
   }
-
-/*  if (pComText->start > pComText->end)
-    error(1, 0, "%d: empty command detected",pComText->startln);*/
 
   return pComText;
 }
