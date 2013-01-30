@@ -26,3 +26,5 @@ void execute_command (command_t, bool);
    been executed.  Wait for the command, if it is not already finished.  */
 int command_status (command_t);
 
+extern command_stream_t gcs;
+

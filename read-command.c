@@ -93,6 +93,8 @@ struct command_stream
   int curCommand;
 
   int numCommands;
+
+  list_t *depLists;
 };
 
 command_t
@@ -280,6 +282,13 @@ make_command_stream (int (*get_next_byte) (void *),
     free(commandStrings[j]);
   free(commandStrings);
   free(line_nums); */
+
+  // BUILD READ/WRITE LISTS (add as a member of command_stream_t)
+ 
+  // BUILD DEPENDENCY LISTS (lists of integer indices of commands that must 
+  //  finish before this one does) 
+  
+  // -1 
   
   return stream;
 }

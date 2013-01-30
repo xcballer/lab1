@@ -23,6 +23,8 @@ get_next_byte (void *stream)
   return getc (stream);
 }
 
+command_stream_t gcs;
+
 int
 main (int argc, char **argv)
 {
@@ -54,6 +56,8 @@ main (int argc, char **argv)
     error (1, errno, "%s: cannot open", script_name);
   command_stream_t command_stream =
     make_command_stream (get_next_byte, script_stream);
+
+  gcs = command_stream;
 
   command_t last_command = NULL;
   command_t command;

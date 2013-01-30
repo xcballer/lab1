@@ -1,4 +1,8 @@
 // UCLA CS 111 Lab 1 command internals
+//
+#define READY_TO_RUN -1
+#define EXECUTION_STARTED -2
+
 
 enum command_type
   {
@@ -22,6 +26,8 @@ struct command_text
 // Data associated with a command.
 struct command
 {
+  int index;
+
   enum command_type type;
 
   // Exit status, or -1 if not known (e.g., because it has not exited yet).
@@ -82,4 +88,13 @@ char *drop_trailing_nulls(char *endbyte);
 command_stream_t stringsToStream(char **commandStrings, int *line_nums, int count);
 
 bool anything_before(char *last, char *first);
+
+
+// LIST STUFF
+
+void push(list_t list, int num);
+
+void remove(list_t list, int num);
+
+void mark_exec(list_t list);
 
