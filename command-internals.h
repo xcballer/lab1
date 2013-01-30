@@ -3,6 +3,14 @@
 #define READY_TO_RUN -1
 #define EXECUTION_STARTED -2
 
+struct list_node
+{
+  int val;
+  struct list_node *next;
+};
+
+typedef struct list_node **list_t;
+
 
 enum command_type
   {
@@ -91,10 +99,13 @@ bool anything_before(char *last, char *first);
 
 
 // LIST STUFF
+list_t list_new();
 
-void push(list_t list, int num);
+void list_push(list_t list, int num);
 
-void remove(list_t list, int num);
+void list_remove(list_t list, int num);
 
-void mark_exec(list_t list);
+void list_mark_exec(list_t list);
+
+int list_peek(list_t list);
 

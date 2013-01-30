@@ -960,3 +960,53 @@ bool anything_before(char *last, char *first)
   }
   return false;
 }
+
+
+// list_t functions
+list_t list_new()
+{
+  list_t reference = checked_malloc(sizeof(struct list_node *));
+  *reference = checked_malloc(sizeof(struct list_node));
+
+  (*reference)->val = READY_TO_RUN;
+  (*reference)->next = NULL;
+
+  return reference;
+}
+
+void list_push(list_t list, int num)
+{
+  struct list_node *first = *list;
+  struct list_node *new = malloc(sizeof(struct list_node));
+  new->val = num;
+  new->next = first;
+  *list = new;
+}
+
+void list_remove(list_t list, int num)
+{
+  struct list_node *ii = *list;
+  struct list_node **locprev = list;
+  while (ii)
+  {
+    if (ii->val == num)
+    {
+      *locprev = ii->next;
+      free(ii);
+      return;
+    }
+    locprev = &(ii->next);
+    ii = ii->next;
+  }
+}
+
+void list_mark_exec(list_t list)
+{
+  (*list)->val = EXECUTION_STARTED;
+}
+
+int list_peek(list_t list)
+{
+  return (*list)->val;
+}
+  
