@@ -3,6 +3,7 @@ Anthony Ortega - 503-953-545
 
 Relevant changes appear in:
    read-command.c, 
+   execute-command.c,
    command-internals.h, 
    command.h
 
