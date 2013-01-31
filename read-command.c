@@ -98,6 +98,9 @@ struct command_stream
 };
 */
 
+void
+make_dep_lists(command_stream_t s);
+
 command_t
 read_command_stream (command_stream_t s)
 {
@@ -1012,5 +1015,185 @@ void list_mark_exec(list_t list)
 int list_peek(list_t list)
 {
   return (*list)->val;
+}
+
+void
+add_inout(char * src, char *** dest)
+{
+  int length = 0;
+  int i;
+  for(i = 0; dest[0][i] != NULL; i++)
+    length++;
+  char** tmp = (char**)checked_realloc(dest[0],sizeof(char*)*(2+length));
+  tmp[length] = src;
+  tmp[length+1] = NULL;
+  dest[0] = tmp;
+}
+
+void
+add_words(char ** src, char **** dest)
+{
+  int length = 0;
+  int i;
+  for(i = 0; dest[0][i] != NULL; i++)
+    length++;
+  char*** tmp = (char***)checked_realloc(dest[0],sizeof(char**)*(2+length));
+  tmp[length] = src;
+  tmp[length+1] = NULL;
+  dest[0] = tmp;
+}
+
+void
+make_rw_list(command_t com, char **** words_read, char *** input_read,
+  char *** output_write)
+{
+  switch(com->type)
+  {
+    case AND_COMMAND:
+    case SEQUENCE_COMMAND:
+    case OR_COMMAND:
+    case PIPE_COMMAND:
+    {
+      make_rw_list(com->u.command[0],words_read,input_read,output_write);
+      make_rw_list(com->u.command[1],words_read,input_read,output_write);
+      break;
+    }
+    case SIMPLE_COMMAND:
+    {
+      add_words(com->u.word, words_read);
+      break;
+    }
+    case SUBSHELL_COMMAND:
+    {
+      make_rw_list(com->u.subshell_command,words_read,input_read,output_write);
+      break;
+    }
+  }
+  /*Add redirections if any*/
+  if(com->input) 
+    add_inout(com->input, input_read);
+  if(com->output)
+    add_inout(com->output, output_write);
+  return;
+}
+
+bool
+does_depend(char **** words_read, char *** input_read, char *** output_write,
+  int prev_com, int curr_com)
+{
+  char *** curr_word = words_read[curr_com];
+  char ** curr_in = input_read[curr_com];
+  char ** curr_out = output_write[curr_com];
+  char *** pre_word = words_read[prev_com];
+  char ** pre_in = input_read[prev_com];
+  char ** pre_out = output_write[prev_com];
+  
+  int i;
+  int j;
+  /*Can't write to same file*/
+  for(i = 0; (curr_out[i] != NULL) && (pre_out[i] != NULL); i++)
+    if(strcmp(curr_out[i],pre_out[i]) == 0)
+      return true;
+  
+  /*Can't read from a file being written to*/
+  for(i = 0; (curr_in[i] != NULL) && (pre_out[i] != NULL); i++)
+    if(strcmp(curr_in[i],pre_out[i]) == 0)
+      return true;
+  for(i = 0; (curr_word[i] != NULL) && (pre_out[i] != NULL); i++)
+    for(j = 0; curr_word[i][j] != NULL; j++)
+      if(strcmp(curr_word[i][j],pre_out[i]) == 0)
+        return true;
+  
+  /*Can't write to a file being read from*/
+  for(i = 0; (curr_out[i] != NULL) && (pre_in[i] != NULL); i++)
+    if(strcmp(curr_out[i],pre_in[i]) == 0)
+      return true;
+  for(i = 0; (curr_out[i] != NULL) && (pre_word[i] != NULL); i++)
+    for(j = 0; pre_word[i][j] != NULL; j++)
+      if(strcmp(curr_out[i], pre_word[i][j]) == 0)
+        return true;
+  return false;
+}
+
+void
+make_dep_lists(command_stream_t s)
+{
+  /*Initialize Read/Write Lists*/
+  char *** words_read[s->numCommands];
+  char ** input_read[s->numCommands];
+  char ** output_write[s->numCommands];
+  s->depLists = checked_malloc(sizeof(struct list_node **)*s->numCommands);
+  
+  int i;
+  int j;
+  
+  /*Set index field for each command starting at 0 and
+      fill the Read/Write Lists*/
+  for(i=0; i < s->numCommands; i++)
+  {
+    (s->commands[i])->index = i;
+    
+    /* Set some NULL's*/
+    words_read[i] = (char***)checked_malloc(sizeof(char **));
+    words_read[i][0] = NULL;
+    input_read[i] = (char**)checked_malloc(sizeof(char*));
+    input_read[i][0] = NULL;
+    output_write[i] = (char**)checked_malloc(sizeof(char*));
+    output_write[i][0] = NULL;
+    
+    make_rw_list(s->commands[i],&words_read[i],&input_read[i],&output_write[i]);
+  }
+  
+  /*Build the Dependency Lists*/
+  for(i = 0; i < s->numCommands; i++)
+  {
+    s->depLists[i] = list_new();
+    for(j = 0; j < i; j++)
+      if(does_depend(words_read,input_read,output_write,j,i))
+        list_push(s->depLists[i],j);
+  }
+  
+  /*Debugging Stuff*/
+  /*int k;
+  for(i = 0; i < s->numCommands; i++)
+  {
+    printf("Command %d reads from:\n",i);
+    for(j = 0; input_read[i][j] != NULL; j++)
+    {
+      printf(input_read[i][j]);
+      printf("\n");
+    }
+    for(j = 0; words_read[i][j] != NULL; j++)
+      for(k = 0; words_read[i][j][k] != NULL; k++)
+      {
+        printf(words_read[i][j][k]);
+        printf("\n");
+      }
+    printf("Command %d writes to:\n",i);
+    for(j = 0; output_write[i][j] != NULL; j++)
+    {
+      printf(output_write[i][j]);
+      printf("\n");
+    }
+  }
+  for(i = 0; i < s->numCommands; i++)
+  {
+    printf("Command %d depends on the following:\n",i);
+    list_t listy = s->depLists[i];
+    while(*listy)
+    {
+     printf("%d\n", (*listy)->val);
+     *listy = (*listy)->next;   
+    }
+  }
+  printf("Done Debugging\n");*/
+  
+  /*Free my allocated data*/
+  for(i = 0; i < s->numCommands; i++)
+  {
+    free(words_read[i]);
+    free(input_read[i]);
+    free(output_write[i]);
+  }
 }
   
