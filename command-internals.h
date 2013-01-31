@@ -1,7 +1,20 @@
 // UCLA CS 111 Lab 1 command internals
 //
+
+// These constants are used inside struct command_stream.depLists to indicate
+//  readiness to run
 #define READY_TO_RUN -1
 #define EXECUTION_STARTED -2
+
+// These constants are used inside struct command_stream.pidList to indicate
+//  various command statuses.  Each element of the pidList will have one of 
+//  these values or a positive integer representing the pid of the child process
+//  managing the command
+#define NOT_YET_RUN 0
+#define JUST_EXITED -1
+#define EXITED_REMOVED_FROM_DEPLISTS -2
+
+#include <sys/types.h>
 
 struct list_node
 {
@@ -58,6 +71,19 @@ struct command
   } u;
 };
 
+struct command_stream
+{
+  struct command **commands;
+
+  int curCommand;
+
+  int numCommands;
+
+  list_t *depLists;
+
+  pid_t *pidList;
+};
+
 /* Allocate memory for a new command struct, populate its fields according
  * to arguments, and return a pointer (of type command_t) to it */
 command_t construct_command (enum command_type type, char *input, char *output,
@@ -96,6 +122,10 @@ char *drop_trailing_nulls(char *endbyte);
 command_stream_t stringsToStream(char **commandStrings, int *line_nums, int count);
 
 bool anything_before(char *last, char *first);
+
+void forkCommandProcess(command_t c);
+
+void handleChildExit(int signum);
 
 
 // LIST STUFF

@@ -10,8 +10,6 @@
 #include <ctype.h>
 #include <string.h>
 
-// START FCNS FROM CURLS
-
 bool is_token(char c)
 {
   /*This function checks for tokens that are not alphanumeric*/
@@ -85,7 +83,7 @@ void add_char(char** list, int curr, char c)
 }
 
 
-
+/* Moved this to command-internals.h so that execute-command.c has access to it
 struct command_stream
 {
   command_t *commands;
@@ -95,7 +93,10 @@ struct command_stream
   int numCommands;
 
   list_t *depLists;
+
+  pid_t *pidList;
 };
+*/
 
 command_t
 read_command_stream (command_stream_t s)
@@ -288,8 +289,11 @@ make_command_stream (int (*get_next_byte) (void *),
   // BUILD DEPENDENCY LISTS (lists of integer indices of commands that must 
   //  finish before this one does) 
   
-  // -1 
-  
+  stream->pidList = checked_malloc(count * sizeof(pid_t));
+
+  // 0 out all pid's.  This will give them all integer values of NOT_YET_RUN.
+  memset(stream->pidList, 0, count * sizeof(pid_t));
+
   return stream;
 }
 

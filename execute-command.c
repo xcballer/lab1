@@ -4,6 +4,8 @@
 #include "command-internals.h"
 
 #include <error.h>
+#include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -43,6 +45,130 @@ execute_command (command_t c, bool time_travel)
       c->status = WEXITSTATUS(temp);
     }
   } 
+  // --------------------------------------------------------- TIME TRAVEL MODE
+  else
+  {
+    // If this is the first command we're executing, get ready to catch 
+    //  SIGCHLD signals
+    if (c->index == 0)
+    {
+      if (signal(SIGCHLD, handleChildExit) == SIG_ERR)
+        error(1,0,"%s",strerror(errno));
+    }
+
+    // if we can actually start this command running, do it
+    if (list_peek(gcs->depLists[c->index]) == READY_TO_RUN)
+    {
+      forkCommandProcess(c);
+    }
+
+    // If we're "executing" the last command...
+    if (c->index == (gcs->numCommands-1))
+    {
+      // MASTER LOOP .................... wait for everything to run //
+      int ii;
+      int jj;
+      bool done;
+      while(1)
+      {
+        done = true;
+        for (ii = 0; ii < gcs->numCommands; ii++)
+        {
+          // for any child command that exited within the last iteration of the
+          //  master loop, remove it from dependency lists.  (removal is not
+          //  safe to do inside signal handler)
+          if (gcs->pidList[ii] == JUST_EXITED)
+          {
+            // Note: commands can only depend on a command BEFORE it
+            for (jj = ii+1; jj < gcs->numCommands; jj++)
+            {
+              list_remove(gcs->depLists[jj], ii);
+            }
+            gcs->pidList[ii] = EXITED_REMOVED_FROM_DEPLISTS;
+          }
+          else if (gcs->pidList[ii] != EXITED_REMOVED_FROM_DEPLISTS)
+          {
+            done = false;
+          }
+
+          // if any child is ready to run, run it!
+          if (list_peek(gcs->depLists[ii]) == READY_TO_RUN)
+          {
+            forkCommandProcess(gcs->commands[ii]);
+          }
+
+        }
+        // if everything has exited, we're done!
+        if (done)
+          return;
+      }
+    }
+    return;
+  }
+}
+
+void
+handleChildExit(int signum)
+{
+  if (signum != SIGCHLD)
+    error(1,0,"Wrong signal. This should never happen.");
+
+  int pid;
+  int status;
+
+  if ((pid = wait(&status)) == -1)
+    error(1,0,"%s",strerror(errno));
+
+
+  if (WIFEXITED(status))
+  {
+    int comIndex;
+
+    // find this pid in the pidLists
+    for (comIndex = 0; comIndex < gcs->numCommands; comIndex++)
+    {
+      if (gcs->pidList[comIndex] == pid)
+      {
+        // now we've found the exited process, mark it as exited
+        gcs->pidList[comIndex] = JUST_EXITED;
+        break;
+      }
+    }
+
+    // save the exit status
+    gcs->commands[comIndex]->status = WEXITSTATUS(status);
+  }
+
+  return;
+}
+    
+
+
+
+
+
+void
+forkCommandProcess(command_t c)
+{
+  pid_t child = fork();
+
+  if(child == -1)
+  {
+    error(1,0,"Error creating child");
+  }
+  else if(child == 0)  // in child
+  {
+    int status = evaluateTree(c);
+    _exit(status);
+  }
+  else                 // in parent
+  { 
+    // add child's pid to the pidList
+    gcs->pidList[c->index] = child;
+    list_push(gcs->depLists[c->index], EXECUTION_STARTED);
+    // parent's work is done here.  child will remain until finished
+    return;
+  }
 }
 
 int
