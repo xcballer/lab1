@@ -296,6 +296,8 @@ make_command_stream (int (*get_next_byte) (void *),
 
   // 0 out all pid's.  This will give them all integer values of NOT_YET_RUN.
   memset(stream->pidList, 0, count * sizeof(pid_t));
+  
+  make_dep_lists(stream);
 
   return stream;
 }
