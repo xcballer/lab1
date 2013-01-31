@@ -6,6 +6,7 @@
 #include <error.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -53,7 +54,7 @@ execute_command (command_t c, bool time_travel)
     if (c->index == 0)
     {
       if (signal(SIGCHLD, handleChildExit) == SIG_ERR)
-        error(1,0,"%s",strerror(errno));
+        error(1,0,"Problem calling signals");
     }
 
     // if we can actually start this command running, do it
@@ -117,8 +118,7 @@ handleChildExit(int signum)
   int status;
 
   if ((pid = wait(&status)) == -1)
-    error(1,0,"%s",strerror(errno));
-
+    return;
 
   if (WIFEXITED(status))
   {
@@ -150,6 +150,9 @@ handleChildExit(int signum)
 void
 forkCommandProcess(command_t c)
 {
+  fprintf(stderr, "forking: ");
+  dump_command(c);
+
   pid_t child = fork();
 
   if(child == -1)
