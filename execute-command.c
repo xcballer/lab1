@@ -114,7 +114,7 @@ handleChildExit(int signum)
   if (signum != SIGCHLD)
     error(1,0,"Wrong signal. This should never happen.");
 
-  int pid;
+  pid_t pid;
   int status;
 
   if ((pid = wait(&status)) == -1)
@@ -150,8 +150,8 @@ handleChildExit(int signum)
 void
 forkCommandProcess(command_t c)
 {
-  fprintf(stderr, "forking: ");
-  dump_command(c);
+  //fprintf(stderr, "forking: ");
+  //dump_command(c);
 
   pid_t child = fork();
 
@@ -161,6 +161,7 @@ forkCommandProcess(command_t c)
   }
   else if(child == 0)  // in child
   {
+    signal(SIGCHLD,SIG_DFL);   //Reset signal to default action
     int status = evaluateTree(c);
     _exit(status);
   }
@@ -168,7 +169,9 @@ forkCommandProcess(command_t c)
   { 
     // add child's pid to the pidList
     gcs->pidList[c->index] = child;
-    list_push(gcs->depLists[c->index], EXECUTION_STARTED);
+    
+    //list_push(gcs->depLists[c->index], EXECUTION_STARTED);
+    list_mark_exec(gcs->depLists[c->index]);   
     // parent's work is done here.  child will remain until finished
     return;
   }
