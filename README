@@ -7,6 +7,10 @@ Relevant changes appear in:
    command-internals.h, 
    command.h
 
+Note that text-t-exec.sh is supposed to print "No such file or directory" 
+messages to stderr.  This is part of our test cases and results in behavior 
+like that of a normal shell.
+
 Makefile was also modified to remove the -Werror tag.
 
 We currently don't know of any specific limitations, but we certainly haven't 
