@@ -125,8 +125,6 @@ bool anything_before(char *last, char *first);
 
 void forkCommandProcess(command_t c);
 
-void handleChildExit(int signum);
-
 
 // LIST STUFF
 list_t list_new();

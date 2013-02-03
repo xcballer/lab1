@@ -136,7 +136,35 @@ EOF
 )
 
 
-for N in 0 1 2 3 4
+# ------------------------------------------------------------------------------
+
+(
+cat >test-t-5.sh <<'EOF'
+sleep 2 && (echo yo > new.file)
+echo something
+cat < new.file && sleep 1
+./notARealFile || (echo hi > new.file && cat new.file | 
+                    grep hi > /dev/null && echo whee)
+cat < new.file
+EOF
+)
+
+(
+cat >test-t-5.exp <<'EOF'
+something
+yo
+whee
+hi
+EOF
+)
+
+(
+cat >test-t-5-chk.sh << 'EOF'
+diff -u testoutput.out  test-t-5.exp
+EOF
+)
+
+for N in 0 1 2 3 4 5
 do
   ../timetrash -t test-t-$N.sh > testoutput.out
   ./test-t-$N-chk.sh && echo PASSED TEST SCRIPT $N ||

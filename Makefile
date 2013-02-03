@@ -19,15 +19,6 @@ TIMETRASH_SOURCES = \
   print-command.c
 TIMETRASH_OBJECTS = $(subst .c,.o,$(TIMETRASH_SOURCES))
 
-# my insertions
-TEST_SOURCES = \
-  alloc.c \
-  execute-command.c \
-  testmain.c \
-  read-command.c \
-  print-command.c
-TEST_OBJECTS = $(subst .c,.o,$(TEST_SOURCES))
-# end insertion
 
 DIST_SOURCES = \
   $(TIMETRASH_SOURCES) alloc.h command.h command-internals.h Makefile \
@@ -36,10 +27,6 @@ DIST_SOURCES = \
 timetrash: $(TIMETRASH_OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(TIMETRASH_OBJECTS)
 
-# my insertion
-testall: $(TEST_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $(TEST_OBJECTS)
-# end insertion
 
 alloc.o: alloc.h
 execute-command.o main.o print-command.o read-command.o: command.h

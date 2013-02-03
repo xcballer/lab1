@@ -49,14 +49,6 @@ execute_command (command_t c, bool time_travel)
   // --------------------------------------------------------- TIME TRAVEL MODE
   else
   {
-    // If this is the first command we're executing, get ready to catch 
-    //  SIGCHLD signals
-    /*if (c->index == 0)
-    {
-      if (signal(SIGCHLD, handleChildExit) == SIG_ERR)
-        error(1,0,"Problem calling signals");
-    }*/
-
     // if we can actually start this command running, do it
     if (list_peek(gcs->depLists[c->index]) == READY_TO_RUN)
     {
@@ -106,8 +98,7 @@ execute_command (command_t c, bool time_travel)
         for (ii = 0; ii < gcs->numCommands; ii++)
         {
           // for any child command that exited within the last iteration of the
-          //  master loop, remove it from dependency lists.  (removal is not
-          //  safe to do inside signal handler)
+          //  master loop, remove it from dependency lists.  
           if (gcs->pidList[ii] == JUST_EXITED)
           {
             // Note: commands can only depend on a command BEFORE it
@@ -138,51 +129,11 @@ execute_command (command_t c, bool time_travel)
   }
 }
 
-void
-handleChildExit(int signum)
-{
-  if (signum != SIGCHLD)
-    error(1,0,"Wrong signal. This should never happen.");
-
-  pid_t pid;
-  int status;
-
-  if ((pid = wait(&status)) == -1)
-    return;
-
-  if (WIFEXITED(status))
-  {
-    int comIndex;
-
-    // find this pid in the pidLists
-    for (comIndex = 0; comIndex < gcs->numCommands; comIndex++)
-    {
-      if (gcs->pidList[comIndex] == pid)
-      {
-        // now we've found the exited process, mark it as exited
-        gcs->pidList[comIndex] = JUST_EXITED;
-        break;
-      }
-    }
-
-    // save the exit status
-    gcs->commands[comIndex]->status = WEXITSTATUS(status);
-  }
-
-  return;
-}
-    
-
-
-
 
 
 void
 forkCommandProcess(command_t c)
 {
-  //fprintf(stderr, "forking: ");
-  //dump_command(c);
-
   pid_t child = fork();
 
   if(child == -1)
@@ -191,7 +142,6 @@ forkCommandProcess(command_t c)
   }
   else if(child == 0)  // in child
   {
-    //signal(SIGCHLD,SIG_DFL);   //Reset signal to default action
     int status = evaluateTree(c);
     _exit(status);
   }
@@ -200,7 +150,6 @@ forkCommandProcess(command_t c)
     // add child's pid to the pidList
     gcs->pidList[c->index] = child;
     
-    //list_push(gcs->depLists[c->index], EXECUTION_STARTED);
     list_mark_exec(gcs->depLists[c->index]);   
     // parent's work is done here.  child will remain until finished
     return;
@@ -313,9 +262,9 @@ evaluateTree (command_t com)
         if(com->type == SIMPLE_COMMAND)
         {
           execvp(com->u.word[0], com->u.word);
-          //error(1, 0, "execvp returned");
-          _exit(1);  // instead of erroring, just exit this process
-
+          error(0,0,"%s", strerror(errno));
+          _exit(1);  // instead of exiting the whole program,
+                     //  just exit this process
         }
         else
         {
