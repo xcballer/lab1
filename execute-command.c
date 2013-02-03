@@ -51,11 +51,11 @@ execute_command (command_t c, bool time_travel)
   {
     // If this is the first command we're executing, get ready to catch 
     //  SIGCHLD signals
-    if (c->index == 0)
+    /*if (c->index == 0)
     {
       if (signal(SIGCHLD, handleChildExit) == SIG_ERR)
         error(1,0,"Problem calling signals");
-    }
+    }*/
 
     // if we can actually start this command running, do it
     if (list_peek(gcs->depLists[c->index]) == READY_TO_RUN)
@@ -70,9 +70,39 @@ execute_command (command_t c, bool time_travel)
       int ii;
       int jj;
       bool done;
+      pid_t pid;
       while(1)
       {
         done = true;
+        for(ii = 0; ii < gcs->numCommands; ii++)
+        {
+          int status;
+
+          if (((pid = waitpid(-1,&status,WNOHANG)) == -1) || (pid == 0))
+            break;
+
+          if (WIFEXITED(status))
+          {
+            int comIndex;
+
+            // find this pid in the pidLists
+            for (comIndex = 0; comIndex < gcs->numCommands; comIndex++)
+            {
+              if (gcs->pidList[comIndex] == pid)
+              {
+                // now we've found the exited process, mark it as exited
+                gcs->pidList[comIndex] = JUST_EXITED;
+                break;
+              }
+            }
+
+            // save the exit status
+            if(comIndex == gcs->numCommands)
+              error(1,0,"UHOH");
+            //fprintf(stderr,"index %d, pid %d ended\n",comIndex,pid);
+            gcs->commands[comIndex]->status = WEXITSTATUS(status);
+          }  
+        }        
         for (ii = 0; ii < gcs->numCommands; ii++)
         {
           // for any child command that exited within the last iteration of the
@@ -161,7 +191,7 @@ forkCommandProcess(command_t c)
   }
   else if(child == 0)  // in child
   {
-    signal(SIGCHLD,SIG_DFL);   //Reset signal to default action
+    //signal(SIGCHLD,SIG_DFL);   //Reset signal to default action
     int status = evaluateTree(c);
     _exit(status);
   }
