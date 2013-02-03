@@ -313,7 +313,9 @@ evaluateTree (command_t com)
         if(com->type == SIMPLE_COMMAND)
         {
           execvp(com->u.word[0], com->u.word);
-          error(1, 0, "execvp returned");
+          //error(1, 0, "execvp returned");
+          _exit(1);  // instead of erroring, just exit this process
+
         }
         else
         {
